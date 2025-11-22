@@ -34,3 +34,10 @@ O projeto foi estruturado em 4 camadas concêntricas, respeitando rigorosamente 
 2. Execute a classe principal:
    ```bash
    mvn clean compile exec:java -Dexec.mainClass="br.com.academiadev.main.Main"
+
+
+## 📋 Justificativa de Design (Requirement Check)
+* Isolamento de Detalhes: A persistência em memória e a exportação CSV foram isoladas na camada infrastructure. Se quiséssemos trocar por um Banco SQL, bastaria criar novas implementações de Repositório sem tocar em uma linha de regra de negócio.
+* Regra da Dependência: Verificada pelo diagrama UML, onde todas as setas apontam para o centro (Domain).
+* Reflection: Utilizado no GenericCsvExporter para permitir que o administrador escolha dinamicamente quais colunas exportar de qualquer lista de objetos.
+* Streams: Utilizados extensivamente no GerarRelatoriosUseCase para filtrar e agregar dados de forma funcional.
