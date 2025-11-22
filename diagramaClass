@@ -1,0 +1,78 @@
+# AcademiaDev - Plataforma de Cursos (Clean Architecture Challenge)
+
+Este repositório contém a implementação do protótipo da plataforma "AcademiaDev", desenvolvido estritamente sob os princípios da **Clean Architecture** e **SOLID**.
+
+O objetivo principal foi criar uma aplicação robusta, desacoplada e testável, utilizando **Java Puro (Vanilla)** sem dependência de frameworks "mágicos" (como Spring Boot), demonstrando o domínio sobre Injeção de Dependência e Regras de Negócio.
+
+## 🏗️ Arquitetura e Design
+
+O projeto respeita a **Regra da Dependência**, onde camadas externas dependem das internas, e nunca o contrário.
+
+### 1. Camada Domain (Núcleo)
+* **O que é:** O coração do sistema. Contém as entidades (`Student`, `Course`, `Enrollment`, `SupportTicket`) e enums.
+* **Regra:** Totalmente isolada. Não conhece banco de dados, UI ou frameworks.
+* **Exemplo:** A lógica `student.canEnroll()` reside aqui, garantindo que regras de negócio (como limite de cursos do plano Basic) sejam universais.
+
+### 2. Camada Application (Casos de Uso)
+* **O que é:** Orquestra o fluxo de dados. Contém as classes `UseCase` e as Interfaces de Repositório (`Repository`).
+* **Inversão de Dependência (DIP):** Os UseCases dependem apenas de abstrações (Interfaces), nunca de implementações concretas.
+* **Funcionalidades:** Matrícula, Gestão de Tickets, Relatórios com Streams, etc.
+
+### 3. Camada Infrastructure (Detalhes)
+* **O que é:** Implementações técnicas que dão suporte à aplicação.
+* **Persistência:** Repositórios em memória (`HashMap`, `ArrayList`, `Queue`) que implementam as interfaces da camada Application.
+* **Utils:** `GenericCsvExporter` utiliza **Java Reflection** para exportar dados dinamicamente.
+* **UI:** Interface de Linha de Comando (CLI) interativa.
+
+### 4. Camada Main (Raiz de Composição)
+* **O que é:** O ponto de entrada (`Main.java`).
+* **Responsabilidade:** É o único lugar acoplado a tudo. Realiza a **Injeção de Dependência Manual**, instanciando os repositórios e passando-os para os construtores dos UseCases e Controllers.
+
+---
+
+## ✅ Funcionalidades Implementadas
+
+### 👤 Aluno (Student)
+* **Matrícula:** Inscrição em cursos (validando regras de plano e duplicidade).
+* **Meus Cursos:** Visualização de matrículas ativas.
+* **Progresso:** Atualização manual da porcentagem de conclusão (0-100%).
+* **Suporte:** Abertura de tickets de dúvida/problema.
+* **Cancelamento:** Possibilidade de cancelar matrícula e liberar vaga.
+
+### 🛡️ Administrador (Admin)
+* **Gestão de Cursos:** Ativar ou inativar cursos do catálogo.
+* **Gestão de Alunos:** Alterar o plano de assinatura (Basic/Premium).
+* **Suporte (FIFO):** Atendimento de tickets seguindo fila por ordem de chegada.
+* **Relatórios Avançados (Streams):**
+    * Cursos por nível de dificuldade.
+    * Instrutores com cursos ativos.
+    * Estatísticas gerais (Média de progresso, aluno com mais matrículas).
+* **Exportação CSV:** Geração dinâmica de arquivos CSV usando Reflection.
+
+---
+
+## 🛠️ Tecnologias
+
+* **Linguagem:** Java 17+
+* **Build:** Maven
+* **Modelagem:** PlantUML
+
+## 🚀 Como Executar
+
+Certifique-se de ter o **Java** e o **Maven** instalados.
+
+1. Clone o repositório.
+2. Na raiz do projeto, execute o comando:
+
+```bash
+mvn clean compile exec:java -Dexec.mainClass="br.com.academiadev.main.Main"
+```
+
+📋 Justificativa de Design (Requirement Check)
+* Isolamento de Detalhes: A persistência em memória e a exportação CSV foram isoladas na camada infrastructure. Se quiséssemos trocar por um Banco SQL, bastaria criar novas implementações de Repositório sem tocar em uma linha de regra de negócio.
+
+* Regra da Dependência: Verificada pelo diagrama UML, onde todas as setas apontam para o centro (Domain).
+
+* Reflection: Utilizado no GenericCsvExporter para permitir que o administrador escolha dinamicamente quais colunas exportar de qualquer lista de objetos.
+
+* Streams: Utilizados extensivamente no GerarRelatoriosUseCase para filtrar e agregar dados de forma funcional.

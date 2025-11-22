@@ -5,6 +5,7 @@ import br.com.academiadev.domain.entities.Enrollment;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class EnrollmentRepositoryImpl implements EnrollmentRepository {
@@ -33,5 +34,18 @@ public class EnrollmentRepositoryImpl implements EnrollmentRepository {
         return database.stream()
                 .anyMatch(e -> e.getStudent().getEmail().equals(studentEmail) 
                             && e.getCourse().getTitle().equals(courseTitle));
+    }
+
+    @Override
+    public Optional<Enrollment> findByStudentAndCourse(String studentEmail, String courseTitle) {
+        return database.stream()
+                .filter(e -> e.getStudent().getEmail().equals(studentEmail) 
+                          && e.getCourse().getTitle().equals(courseTitle))
+                .findFirst();
+    }
+
+    @Override
+    public void delete(Enrollment enrollment) {
+        database.remove(enrollment);
     }
 }
