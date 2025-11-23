@@ -1,0 +1,23 @@
+JUSTIFICATIVA DE DESIGN ARQUITETURAL
+Projeto: AcademiaDev - Plataforma de Cursos
+Nome: Maria Eduarda Alves Selvatti
+Prontuário: GU3046109
+
+1. ESTRUTURA E ARQUITETURA
+O projeto segue a Clean Architecture, garantindo que as regras de negocio nao dependam de detalhes tecnicos.
+- Domain: Camada central. Contem apenas as entidades e regras puras (ex: validacao de matricula). Nao faz import de nenhuma outra camada.
+- Application: Define O QUE o sistema faz (UseCases) e as interfaces de persistencia, mas nao implementa o banco de dados.
+- Infrastructure: Contem os detalhes de COMO o sistema faz (banco em memoria, console, exportacao CSV).
+
+2. ISOLAMENTO DOS DETALHES
+Conforme os requisitos, isolei a tecnologia na camada de Infraestrutura:
+- Persistencia: Feita com Mapas e Listas em memoria, implementando as interfaces definidas na Application.
+- CSV com Reflection: Criada uma classe utilitaria generica que le os atributos de qualquer objeto dinamicamente, sem acoplar o dominio a essa logica.
+
+3. INJECAO DE DEPENDENCIA (MAIN)
+Nao utilizei frameworks (como Spring). A classe "Main" e a unica que conhece todas as camadas.
+Ela cria as instancias dos repositorios e as "injeta" dentro dos Casos de Uso atraves do construtor.
+
+4. REQUISITOS ESPECIFICOS
+- Java Streams: Utilizado nos relatorios para filtrar e agrupar dados complexos.
+- Fila FIFO: Utilizei a interface Queue/ArrayDeque para o sistema de tickets de suporte.
