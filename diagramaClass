@@ -1,78 +1,190 @@
-# AcademiaDev - Plataforma de Cursos (Clean Architecture Challenge)
+@startuml
 
-Este repositório contém a implementação do protótipo da plataforma "AcademiaDev", desenvolvido estritamente sob os princípios da **Clean Architecture** e **SOLID**.
+enum SubscriptionPlan {
+    BASIC
+    PREMIUM
+}
 
-O objetivo principal foi criar uma aplicação robusta, desacoplada e testável, utilizando **Java Puro (Vanilla)** sem dependência de frameworks "mágicos" (como Spring Boot), demonstrando o domínio sobre Injeção de Dependência e Regras de Negócio.
+enum DifficultyLevel {
+    BEGINNER
+    INTERMEDIATE
+    ADVANCED
+}
 
-## 🏗️ Arquitetura e Design
+enum CourseStatus {
+    ACTIVE
+    INACTIVE
+}
 
-O projeto respeita a **Regra da Dependência**, onde camadas externas dependem das internas, e nunca o contrário.
+abstract class User {
+    # String name
+    # String email
+}
 
-### 1. Camada Domain (Núcleo)
-* **O que é:** O coração do sistema. Contém as entidades (`Student`, `Course`, `Enrollment`, `SupportTicket`) e enums.
-* **Regra:** Totalmente isolada. Não conhece banco de dados, UI ou frameworks.
-* **Exemplo:** A lógica `student.canEnroll()` reside aqui, garantindo que regras de negócio (como limite de cursos do plano Basic) sejam universais.
+class Student {
+    + canEnroll() : boolean
+    + addEnrollment(Enrollment)
+}
 
-### 2. Camada Application (Casos de Uso)
-* **O que é:** Orquestra o fluxo de dados. Contém as classes `UseCase` e as Interfaces de Repositório (`Repository`).
-* **Inversão de Dependência (DIP):** Os UseCases dependem apenas de abstrações (Interfaces), nunca de implementações concretas.
-* **Funcionalidades:** Matrícula, Gestão de Tickets, Relatórios com Streams, etc.
+class Admin {
+}
 
-### 3. Camada Infrastructure (Detalhes)
-* **O que é:** Implementações técnicas que dão suporte à aplicação.
-* **Persistência:** Repositórios em memória (`HashMap`, `ArrayList`, `Queue`) que implementam as interfaces da camada Application.
-* **Utils:** `GenericCsvExporter` utiliza **Java Reflection** para exportar dados dinamicamente.
-* **UI:** Interface de Linha de Comando (CLI) interativa.
+class Course {
+    - String title
+    - String description
+    - int duration
+    + inactivate()
+    + activate()
+    + isActive() : boolean
+}
 
-### 4. Camada Main (Raiz de Composição)
-* **O que é:** O ponto de entrada (`Main.java`).
-* **Responsabilidade:** É o único lugar acoplado a tudo. Realiza a **Injeção de Dependência Manual**, instanciando os repositórios e passando-os para os construtores dos UseCases e Controllers.
+class Enrollment {
+    - LocalDateTime date
+    - int progress
+    + updateProgress(int)
+}
 
----
+class SupportTicket {
+    - int id
+    - String title
+    - String message
+    - boolean resolved
+    + closeTicket()
+}
 
-## ✅ Funcionalidades Implementadas
+User <|-- Student
+User <|-- Admin
+Student --> SubscriptionPlan
+Course --> DifficultyLevel
+Course --> CourseStatus
+Student "1" *-- "*" Enrollment
+Enrollment "1" --> "1" Course
+SupportTicket --> User
 
-### 👤 Aluno (Student)
-* **Matrícula:** Inscrição em cursos (validando regras de plano e duplicidade).
-* **Meus Cursos:** Visualização de matrículas ativas.
-* **Progresso:** Atualização manual da porcentagem de conclusão (0-100%).
-* **Suporte:** Abertura de tickets de dúvida/problema.
-* **Cancelamento:** Possibilidade de cancelar matrícula e liberar vaga.
+interface UserRepository {
+    + findByEmail(String) : Optional<User>
+    + save(User)
+    + findAll() : List<User>
+}
 
-### 🛡️ Administrador (Admin)
-* **Gestão de Cursos:** Ativar ou inativar cursos do catálogo.
-* **Gestão de Alunos:** Alterar o plano de assinatura (Basic/Premium).
-* **Suporte (FIFO):** Atendimento de tickets seguindo fila por ordem de chegada.
-* **Relatórios Avançados (Streams):**
-    * Cursos por nível de dificuldade.
-    * Instrutores com cursos ativos.
-    * Estatísticas gerais (Média de progresso, aluno com mais matrículas).
-* **Exportação CSV:** Geração dinâmica de arquivos CSV usando Reflection.
+interface CourseRepository {
+    + findByTitle(String) : Optional<Course>
+    + save(Course)
+    + findAll() : List<Course>
+}
 
----
+interface EnrollmentRepository {
+    + existsByStudentAndCourse(String, String) : boolean
+    + findByStudentAndCourse(String, String) : Optional<Enrollment>
+    + findAllByStudentEmail(String) : List<Enrollment>
+    + save(Enrollment)
+    + delete(Enrollment)
+}
 
-## 🛠️ Tecnologias
+interface TicketRepository {
+    + addTicket(SupportTicket)
+    + nextTicket() : Optional<SupportTicket>
+    + isEmpty() : boolean
+}
 
-* **Linguagem:** Java 17+
-* **Build:** Maven
-* **Modelagem:** PlantUML
+class UserRepositoryImpl {
+    - Map<String, User> database
+}
 
-## 🚀 Como Executar
+class CourseRepositoryImpl {
+    - Map<String, Course> database
+}
 
-Certifique-se de ter o **Java** e o **Maven** instalados.
+class EnrollmentRepositoryImpl {
+    - List<Enrollment> database
+}
 
-1. Clone o repositório.
-2. Na raiz do projeto, execute o comando:
+class TicketRepositoryImpl {
+    - Queue<SupportTicket> queue
+}
 
-```bash
-mvn clean compile exec:java -Dexec.mainClass="br.com.academiadev.main.Main"
-```
+UserRepositoryImpl ..|> UserRepository
+CourseRepositoryImpl ..|> CourseRepository
+EnrollmentRepositoryImpl ..|> EnrollmentRepository
+TicketRepositoryImpl ..|> TicketRepository
 
-📋 Justificativa de Design (Requirement Check)
-* Isolamento de Detalhes: A persistência em memória e a exportação CSV foram isoladas na camada infrastructure. Se quiséssemos trocar por um Banco SQL, bastaria criar novas implementações de Repositório sem tocar em uma linha de regra de negócio.
+class MatricularAlunoUseCase {
+    + execute(email, courseTitle)
+}
 
-* Regra da Dependência: Verificada pelo diagrama UML, onde todas as setas apontam para o centro (Domain).
+class ListarCursosUseCase {
+    + execute() : List<Course>
+}
 
-* Reflection: Utilizado no GenericCsvExporter para permitir que o administrador escolha dinamicamente quais colunas exportar de qualquer lista de objetos.
+class AbrirTicketUseCase {
+    + execute(email, title, message)
+}
 
-* Streams: Utilizados extensivamente no GerarRelatoriosUseCase para filtrar e agregar dados de forma funcional.
+class ProcessarTicketUseCase {
+    + execute() : SupportTicket
+}
+
+class GerarRelatoriosUseCase {
+    + cursosPorNivel(DifficultyLevel)
+    + instrutoresComCursosAtivos()
+    + alunosAgrupadosPorPlano()
+    + mediaGeralProgresso()
+}
+
+class GerenciarCursoUseCase {
+    + toggleStatus(courseTitle)
+}
+
+class GerenciarPlanoAlunoUseCase {
+    + execute(email, newPlan)
+}
+
+class AtualizarProgressoUseCase {
+    + execute(email, courseTitle, newProgress)
+}
+
+class CancelarMatriculaUseCase {
+    + execute(email, courseTitle)
+}
+
+MatricularAlunoUseCase ..> UserRepository
+MatricularAlunoUseCase ..> CourseRepository
+MatricularAlunoUseCase ..> EnrollmentRepository
+ListarCursosUseCase ..> CourseRepository
+AbrirTicketUseCase ..> TicketRepository
+AbrirTicketUseCase ..> UserRepository
+ProcessarTicketUseCase ..> TicketRepository
+GerarRelatoriosUseCase ..> CourseRepository
+GerarRelatoriosUseCase ..> EnrollmentRepository
+GerarRelatoriosUseCase ..> UserRepository
+GerenciarCursoUseCase ..> CourseRepository
+GerenciarPlanoAlunoUseCase ..> UserRepository
+AtualizarProgressoUseCase ..> EnrollmentRepository
+CancelarMatriculaUseCase ..> EnrollmentRepository
+
+class GenericCsvExporter {
+    + {static} export(List data, String[] columns) : String
+}
+
+class ConsoleController {
+    + start()
+}
+
+class ConsoleView {
+    + showMenu()
+    + showMessages()
+}
+
+ConsoleController --> ConsoleView
+ConsoleController --> MatricularAlunoUseCase
+ConsoleController --> ListarCursosUseCase
+ConsoleController --> AbrirTicketUseCase
+ConsoleController --> ProcessarTicketUseCase
+ConsoleController --> GerarRelatoriosUseCase
+ConsoleController --> GerenciarCursoUseCase
+ConsoleController --> GerenciarPlanoAlunoUseCase
+ConsoleController --> AtualizarProgressoUseCase
+ConsoleController --> CancelarMatriculaUseCase
+ConsoleController ..> GenericCsvExporter
+
+@enduml
